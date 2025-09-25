@@ -2,46 +2,46 @@
 <html lang="it">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no" />
-  <title>Shelly - Controllo iPhone</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1" />
+  <title>Shelly iPhone</title>
   <style>
-    body {
-      font-family: system-ui, Segoe UI, Roboto, Arial;
-      background: #f4f6f8;
-      display: flex;
-      flex-direction: column;
+    html, body {
       margin: 0;
-      height: 100vh;
+      padding: 0;
+      height: 100%;
+      width: 100%;
+      overflow: hidden; /* niente scroll */
+      font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #f4f6f8;
     }
     .grid {
       display: grid;
       grid-template-columns: repeat(2, 1fr);
-      grid-template-rows: repeat(4, 1fr); /* 8 pulsanti in 4 righe */
-      gap: 8px;
-      flex-grow: 1;
-      padding: 8px;
+      grid-template-rows: repeat(4, 1fr);
+      gap: 6px;
+      height: 100%;
+      width: 100%;
       box-sizing: border-box;
+      padding: 6px;
     }
     button {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
       width: 100%;
       height: 100%;
       border: 3px solid #FFD700; /* bordo oro */
-      border-radius: 12px;
-      cursor: pointer;
-      color: #fff;
+      border-radius: 10px;
       background: linear-gradient(135deg, #2ecc71, #95a5a6);
-      box-shadow:
-        inset 0 2px 6px rgba(255, 255, 255, 0.4),
-        inset 0 -2px 6px rgba(0, 0, 0, 0.2),
-        0 6px 12px rgba(0, 0, 0, .25);
+      color: #fff;
+      font-weight: 700;
+      font-size: 6vh; /* proporzionato all’altezza, più grande ma non esce */
+      text-align: center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: inset 0 2px 4px rgba(255,255,255,0.3),
+                  inset 0 -2px 4px rgba(0,0,0,0.2),
+                  0 4px 8px rgba(0,0,0,.2);
       transition: all 0.2s;
-      font-weight: 600;
-      font-size: clamp(14px, 4vw, 22px); /* testo sempre leggibile ma non enorme */
-      line-height: 1.2;
+      line-height: 1.1;
     }
     button:active {
       transform: scale(0.97);
@@ -51,11 +51,13 @@
       color: #222;
     }
     #status {
+      position: absolute;
+      bottom: 2px;
+      left: 0;
+      right: 0;
       text-align: center;
-      padding: 6px;
-      font-size: 14px;
+      font-size: 12px;
       color: #444;
-      font-weight: 500;
     }
   </style>
 </head>
@@ -64,7 +66,7 @@
   <div id="status">stato: —</div>
 
 <script>
-// CONFIGURAZIONE — nome, IP e canale
+// CONFIGURAZIONE — se vuoi puoi leggere da CSV esterno
 const SHELLY = [
   { name: "Luce Sala",   ip: "http://192.168.1.10", channel: 0 },
   { name: "Cancello",    ip: "http://192.168.1.11", channel: 0 },
@@ -76,31 +78,23 @@ const SHELLY = [
   { name: "Camera",      ip: "http://192.168.1.17", channel: 1 }
 ];
 
-const BASIC_AUTH = ""; // es. "admin:password" se serve
-
-// Generazione pulsanti
 const container = document.getElementById("buttons");
 SHELLY.forEach((s, idx) => {
   const btn = document.createElement("button");
   btn.textContent = s.name;
-  btn.onclick = () => sendCmd(idx, btn);
+  btn.onclick = () => sendCmd(s, btn);
   container.appendChild(btn);
 });
 
-async function sendCmd(idx, btn) {
-  const { name, ip, channel } = SHELLY[idx];
-  const url = ip.replace(/\/+$/, '') + `/relay/${channel}?turn=on`;
-  const headers = {};
-  if (BASIC_AUTH) headers["Authorization"] = "Basic " + btoa(BASIC_AUTH);
-
+async function sendCmd(s, btn) {
+  const url = s.ip.replace(/\/+$/, '') + `/relay/${s.channel}?turn=on`;
   btn.classList.add("highlight");
   setTimeout(() => btn.classList.remove("highlight"), 800);
-
   try {
-    document.getElementById("status").textContent = `stato: ${name} (canale ${channel}) accensione...`;
-    const res = await fetch(url, { method: "GET", headers, cache: "no-store" });
+    document.getElementById("status").textContent = `stato: ${s.name} (canale ${s.channel}) accensione...`;
+    const res = await fetch(url);
     if (!res.ok) throw new Error("HTTP " + res.status);
-    document.getElementById("status").textContent = `stato: ${name} acceso (canale ${channel})`;
+    document.getElementById("status").textContent = `stato: ${s.name} acceso (canale ${s.channel})`;
   } catch (err) {
     document.getElementById("status").textContent = "errore: " + err.message;
   }
